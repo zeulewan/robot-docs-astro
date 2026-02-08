@@ -1,0 +1,36 @@
+---
+title: Robot Docs
+description: Workstation setup documentation for robotics simulation and development with Isaac Sim, Isaac ROS, and Unitree G1.
+template: splash
+hero:
+  tagline: Workstation setup docs for Isaac Sim, Isaac ROS, and Unitree G1 development
+  actions:
+    - text: Current Setup
+      link: /robot-docs/current-setup/
+      icon: right-arrow
+      variant: primary
+    - text: Current Progress
+      link: /robot-docs/current-progress/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid stagger>
+	<Card title="Architecture" icon="setting">
+		System architecture for simulation and real G1 robot modes, data flow diagrams, and network topology.
+		[View architecture](/robot-docs/architecture/)
+	</Card>
+	<Card title="Isaac Sim" icon="rocket">
+		NVIDIA Isaac Sim 5.1 and Isaac Lab 2.3.2 setup, ROS 2 bridge, Foxglove visualization.
+		[View docs](/robot-docs/isaac-sim/)
+	</Card>
+	<Card title="Isaac ROS" icon="puzzle">
+		GPU-accelerated perception container with AprilTag, cuVSLAM, nvblox.
+		[View docs](/robot-docs/isaac-ros/)
+	</Card>
+	<Card title="Networking" icon="laptop">
+		Tailscale VPN, network topology, NAT troubleshooting.
+		[View docs](/robot-docs/networking/topology/)
+	</Card>
+</CardGrid>
