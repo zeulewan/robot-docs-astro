@@ -12,6 +12,8 @@ description: "Workstation hardware, GPU, and system specifications."
 | **Tailscale IPv4** | 100.101.214.44 |
 | **Local IP** | 192.168.2.239 (UniFi LAN) |
 
+---
+
 ## Hardware Specs
 
 | | |
@@ -19,8 +21,10 @@ description: "Workstation hardware, GPU, and system specifications."
 | **GPU** | NVIDIA GeForce RTX 3090 (24GB VRAM) |
 | **RAM** | 62GB |
 | **OS** | Ubuntu 24.04.3 LTS |
-| **Display Server** | X11 (Xorg) - required for Isaac Sim |
+| **Display Server** | X11 (Xorg) -- required for Isaac Sim |
 | **Desktop** | GNOME |
+
+---
 
 ## NVIDIA Driver
 
@@ -29,43 +33,38 @@ description: "Workstation hardware, GPU, and system specifications."
 | **Driver** | 580.126.09 |
 | **CUDA** | 13.0 |
 
-### Check GPU Status
-
 ```bash
+# GPU status
 nvidia-smi
-```
 
-### Check Driver Version
-
-```bash
+# Driver version
 nvidia-smi --query-gpu=driver_version --format=csv
-```
 
-### Check DKMS Module
-
-```bash
+# DKMS module
 dkms status
 ```
 
+---
+
 ## GPU Requirements for Isaac Sim
 
-### Supported (RT Cores + NVENC required)
+RT Cores + NVENC required.
 
-- RTX 3090 (workstation)
-- RTX 4080/4090
-- RTX A4000/A5000/A6000
-
-### NOT Supported
-
-- A100 (no RT Cores)
-- H100 (no RT Cores)
-- Tesla GPUs
+| Supported | NOT Supported |
+|---|---|
+| RTX 3090 (workstation) | A100 (no RT Cores) |
+| RTX 4080/4090 | H100 (no RT Cores) |
+| RTX A4000/A5000/A6000 | Tesla GPUs |
 
 ### Minimum Specs
 
-- 16GB VRAM (RTX 3090 has 24GB)
-- 32GB RAM (workstation has 62GB)
-- Driver 535+
+| | |
+|---|---|
+| **VRAM** | 16GB (RTX 3090 has 24GB) |
+| **RAM** | 32GB (workstation has 62GB) |
+| **Driver** | 535+ |
+
+---
 
 ## tmux Sessions
 
@@ -76,21 +75,16 @@ dkms status
 | `work` | General commands |
 
 ```bash
-# Create
-tmux new -s isaac-setup
-
-# Attach
-tmux attach -t isaac-setup
-
-# List
-tmux ls
+tmux new -s isaac-setup    # Create
+tmux attach -t isaac-setup # Attach
+tmux ls                    # List
 ```
+
+---
 
 ## Troubleshooting
 
 ### NVIDIA driver issues after update
-
-If NVIDIA package installs cause driver conflicts:
 
 ```bash
 # Check what's installed
@@ -106,4 +100,4 @@ sudo systemctl restart gdm
 nvidia-smi
 ```
 
-**Note:** Installing `libnvidia-encode-550` can pull in conflicting server packages. The newer driver takes over -- just restart GDM.
+Installing `libnvidia-encode-550` can pull in conflicting server packages. The newer driver takes over -- restart GDM.

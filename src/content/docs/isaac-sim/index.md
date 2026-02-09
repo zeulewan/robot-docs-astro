@@ -1,6 +1,6 @@
 ---
 title: Isaac Sim & Isaac Lab
-description: Isaac Sim 5.1 and Isaac Lab 2.3.2 installation, configuration, ROS 2 bridge, and troubleshooting.
+description: Isaac Sim 5.1 and Isaac Lab setup, ROS 2 bridge, and troubleshooting.
 ---
 
 ## Current Installation
@@ -34,15 +34,15 @@ conda activate isaaclab
 pip install "isaacsim[all,extscache]==5.1.0" --extra-index-url https://pypi.nvidia.com
 ```
 
-### Standalone (Removed Feb 2026)
+### Standalone (removed Feb 2026)
 
-Standalone install at `~/isaac-sim/` removed to save 17 GB. Pip version has the same features (GUI, ROS 2 bridge, streaming, all extensions).
+Standalone install at `~/isaac-sim/` removed to save 17 GB. Pip version has the same features.
 
 ---
 
 ## Isaac Lab
 
-Separate framework for robot learning built on Isaac Sim.
+Robot learning framework built on Isaac Sim.
 
 ### Installation (after Isaac Sim works)
 
@@ -123,7 +123,7 @@ ls ~/.nvidia-omniverse/logs/Kit/Isaac-Sim/*/kit_*.log
 
 ### Slow first launch
 
-Normal -- shader compilation takes 5-10 minutes on first run. Subsequent launches are faster.
+Shader compilation takes 5-10 minutes on first run. Subsequent launches are faster.
 
 ### GPU not being used
 
@@ -152,4 +152,4 @@ watch -n 1 nvidia-smi
 | [Isaac Sim](https://docs.isaacsim.omniverse.nvidia.com/5.1.0/) | Simulator docs (GUI, sensors, ROS bridge config, extensions) | **NO** for install. Reference only |
 | [Isaac ROS](https://nvidia-isaac-ros.github.io/index.html) | GPU-accelerated ROS 2 perception packages | **YES** -- our Isaac ROS Docker install source |
 
-Isaac Lab handles Isaac Sim installation. Isaac Sim docs are reference only (don't follow their install guides). Isaac ROS uses Docker (no host ROS 2).
+Isaac Lab handles Isaac Sim installation. Isaac Sim docs are reference only -- don't follow their install guides. Isaac ROS uses Docker (no host ROS 2).

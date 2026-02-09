@@ -1,0 +1,44 @@
+/* ============================================
+   Robot Docs — Minimal Custom Styles
+   Keep defaults, just light branding
+   ============================================ */
+
+/* Accent color — blue-violet */
+:root {
+	--sl-color-accent-low: hsl(250, 54%, 18%);
+	--sl-color-accent: hsl(250, 90%, 65%);
+	--sl-color-accent-high: hsl(250, 100%, 85%);
+}
+
+:root[data-theme='light'] {
+	--sl-color-accent-low: hsl(250, 88%, 92%);
+	--sl-color-accent: hsl(250, 80%, 55%);
+	--sl-color-accent-high: hsl(250, 80%, 30%);
+}
+
+/* Blog post cards */
+.posts article.preview {
+	border: 1px solid var(--sl-color-gray-5);
+	border-radius: 0.75rem;
+	padding: 1.5rem;
+	margin-bottom: 1rem;
+}
+
+.posts article.preview:hover {
+	border-color: var(--sl-color-accent);
+}
+
+.posts article.preview h2 {
+	margin: 0 0 0.5rem 0;
+	border-bottom: none;
+	padding-bottom: 0;
+}
+
+.posts article.preview footer a {
+	font-size: var(--sl-text-xs);
+	background: var(--sl-color-accent-low);
+	border-radius: 2rem;
+	padding: 0.2em 0.75em;
+	color: var(--sl-color-accent-high);
+	text-decoration: none;
+}

@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightBlog from 'starlight-blog';
+import starlightClientMermaid from '@pasqal-io/starlight-client-mermaid';
 
 // https://astro.build/config
 export default defineConfig({
@@ -10,10 +11,12 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'Robot Docs',
+			customCss: ['./src/styles/custom.css'],
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/zeulewan/robot-docs' }],
 			plugins: [
+				starlightClientMermaid(),
 				starlightBlog({
-					title: 'Setup Log',
+					title: 'Blog',
 					authors: {
 						zeul: {
 							name: 'Zeul',
@@ -22,10 +25,16 @@ export default defineConfig({
 				}),
 			],
 			sidebar: [
-				{ label: 'Getting Started', slug: 'getting-started' },
-				{ label: 'Current Setup', slug: 'current-setup' },
-				{ label: 'Current Progress', slug: 'current-progress' },
-				{ label: 'Architecture', slug: 'architecture' },
+				{
+					label: 'Overview',
+					items: [
+						{ label: 'Getting Started', slug: 'getting-started' },
+						{ label: 'Current Setup', slug: 'current-setup' },
+						{ label: 'Current Progress', slug: 'current-progress' },
+						{ label: 'Architecture', slug: 'architecture' },
+						{ label: 'About This Site', slug: 'about' },
+					],
+				},
 				{
 					label: 'Isaac Sim',
 					items: [

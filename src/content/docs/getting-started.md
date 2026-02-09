@@ -56,22 +56,17 @@ Browser-based visualization tool. Connects to a WebSocket bridge (port 8765) in 
 
 ## How it all connects
 
-```
-Workstation
-┌──────────────────────┐     ┌──────────────────────┐
-│  Isaac Sim            │     │  Isaac ROS Container  │
-│                      │     │                      │
-│  Simulated G1 robot  │ DDS │  SLAM, AprilTag,     │
-│  cameras, IMU, joints├────►│  nvblox, nav2        │
-│                      │◄────┤                      │
-│  Physics + rendering │     │  Foxglove bridge     │
-└──────────────────────┘     │  :8765               │
-        GPU                  └──────────┬───────────┘
-                                        │ WebSocket
-                              ┌─────────┴──────────┐
-                              │  Foxglove Studio    │
-                              │  (any browser)      │
-                              └────────────────────┘
+```mermaid
+flowchart LR
+    subgraph WS["Workstation"]
+        SIM["Isaac Sim<br/>Simulated G1 robot<br/>cameras, IMU, joints<br/>physics + rendering<br/>GPU"]
+        ROS["Isaac ROS Container<br/>SLAM, AprilTag<br/>nvblox, nav2<br/>Foxglove bridge :8765"]
+    end
+    FOX["Foxglove Studio<br/>(any browser)"]
+
+    SIM -- "DDS" --> ROS
+    ROS -- "DDS" --> SIM
+    ROS -- "WebSocket :8765" --> FOX
 ```
 
 In simulation mode, Isaac Sim replaces the real robot. In real robot mode, the G1's Jetson Orin publishes the same ROS 2 topics over Ethernet instead.

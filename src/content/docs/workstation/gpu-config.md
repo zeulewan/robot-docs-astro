@@ -7,13 +7,17 @@ description: "NVIDIA persistence mode, Sunshine streaming server, and display co
 
 ### NVIDIA Persistence Mode
 
-- **Status: Enabled** (set Feb 2026 to fix 30fps idle issue)
-- Systemd service: `nvidia-persistenced`
-- Override: `/etc/systemd/system/nvidia-persistenced.service.d/override.conf`
-  - Removes the `--no-persistence-mode` flag from the stock service
-  - Stock service at `/usr/lib/systemd/system/nvidia-persistenced.service` has `--no-persistence-mode` which defeats the purpose
-- Verify: `nvidia-smi -q | grep "Persistence Mode"` should show `Enabled`
-- Manual enable: `sudo nvidia-smi -pm 1`
+| | |
+|---|---|
+| **Status** | Enabled (set Feb 2026 to fix 30fps idle issue) |
+| **Service** | `nvidia-persistenced` |
+| **Override** | `/etc/systemd/system/nvidia-persistenced.service.d/override.conf` |
+| **Verify** | `nvidia-smi -q \| grep "Persistence Mode"` -- should show `Enabled` |
+| **Manual enable** | `sudo nvidia-smi -pm 1` |
+
+The stock service at `/usr/lib/systemd/system/nvidia-persistenced.service` has `--no-persistence-mode` which defeats the purpose. Override removes that flag.
+
+---
 
 ### Known Issue: 30fps after idle
 
@@ -23,18 +27,22 @@ description: "NVIDIA persistence mode, Sunshine streaming server, and display co
   1. Enabled persistence mode (`nvidia-smi -pm 1`)
   2. Created systemd override to persist across reboots
   3. Disabled DPMS in xorg.conf and via `xset -dpms`
-- If it recurs: check `nvidia-smi` for P-state (should not be P8) and `nvidia-smi -q | grep "Persistence Mode"`
+- If it recurs: check `nvidia-smi` for P-state (should not be P8) and persistence mode status
+
+---
 
 ## X11 / Display Configuration
 
 ### xorg.conf
 
-- Path: `/etc/X11/xorg.conf`
-- Headless virtual display (no physical monitor)
-- Connected monitor: `DP-0` (virtual)
-- DPMS: **Disabled** (`Option "DPMS" "false"` in Monitor section)
-- DPI: 96x96
-- ModeValidation: permissive (AllowNonEdidModes, NoVirtualSizeCheck, etc.)
+| | |
+|---|---|
+| **Path** | `/etc/X11/xorg.conf` |
+| **Display** | Headless virtual (no physical monitor) |
+| **Connected monitor** | `DP-0` (virtual) |
+| **DPMS** | Disabled (`Option "DPMS" "false"`) |
+| **DPI** | 96x96 |
+| **ModeValidation** | Permissive (AllowNonEdidModes, NoVirtualSizeCheck, etc.) |
 
 ### Available Resolutions (MetaModes)
 
@@ -51,25 +59,32 @@ description: "NVIDIA persistence mode, Sunshine streaming server, and display co
 
 ### DPMS / Screen Blanking
 
-- **DPMS: Disabled** (both in xorg.conf and at runtime via `xset -dpms`)
-- Screen saver: Off (`xset s off`)
+- DPMS disabled (both in xorg.conf and at runtime via `xset -dpms`)
+- Screen saver off (`xset s off`)
 - Prevents GPU from downclocking when idle
+
+---
 
 ### GDM
 
-- Autologin: enabled (user: zeul)
-- Wayland: disabled (X11 only for NVIDIA KMS capture)
-- Config: `/etc/gdm3/custom.conf`
+| | |
+|---|---|
+| **Autologin** | Enabled (user: zeul) |
+| **Wayland** | Disabled (X11 only for NVIDIA KMS capture) |
+| **Config** | `/etc/gdm3/custom.conf` |
+
+---
 
 ## Sunshine Configuration
 
 ### Service
 
-- Type: systemd user service (`sunshine.service`)
-- Auto-start: on graphical session
-- Override: `~/.config/systemd/user/sunshine.service.d/override.conf`
-  - `Restart=always`, `RestartSec=5`
-  - Requires `graphical-session.target`
+| | |
+|---|---|
+| **Type** | systemd user service (`sunshine.service`) |
+| **Auto-start** | On graphical session |
+| **Override** | `~/.config/systemd/user/sunshine.service.d/override.conf` |
+| **Restart** | `Restart=always`, `RestartSec=5` |
 
 ### Config (`~/.config/sunshine/sunshine.conf`)
 
@@ -83,45 +98,35 @@ qp = 10
 
 ### Resolution Auto-Switch
 
-- Script: `~/set-resolution.sh`
-- Called via Sunshine prep-cmd on stream start
-- Uses `SUNSHINE_CLIENT_WIDTH` / `SUNSHINE_CLIENT_HEIGHT` env vars
-- Switches via `nvidia-settings -a CurrentMetaMode`
-- Logs to `/tmp/sunshine-res.log`
+| | |
+|---|---|
+| **Script** | `~/set-resolution.sh` |
+| **Trigger** | Sunshine prep-cmd on stream start |
+| **Env vars** | `SUNSHINE_CLIENT_WIDTH` / `SUNSHINE_CLIENT_HEIGHT` |
+| **Method** | `nvidia-settings -a CurrentMetaMode` |
+| **Log** | `/tmp/sunshine-res.log` |
 
 ### Web UI
 
-- URL: `https://localhost:47990` (or via Tailscale IP)
-- Remote access enabled (`origin_web_ui_allowed = wan`)
+`https://localhost:47990` (or via Tailscale IP). Remote access enabled (`origin_web_ui_allowed = wan`).
+
+---
 
 ## Quick Reference
 
-### Check GPU status
-
 ```bash
+# GPU status
 nvidia-smi
-```
 
-### Check display config
-
-```bash
+# Display config
 DISPLAY=:0 xrandr
-```
 
-### Check Sunshine logs
-
-```bash
+# Sunshine logs
 journalctl --user -u sunshine -n 50
-```
 
-### Restart Sunshine
-
-```bash
+# Restart Sunshine
 systemctl --user restart sunshine
-```
 
-### Check DPMS status
-
-```bash
+# DPMS status
 DISPLAY=:0 xset q | grep -A3 DPMS
 ```

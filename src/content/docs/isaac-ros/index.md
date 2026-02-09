@@ -1,6 +1,6 @@
 ---
 title: Isaac ROS Container
-description: GPU-accelerated ROS 2 perception container setup, packages, FastDDS fix, and troubleshooting.
+description: GPU-accelerated ROS 2 perception container setup and troubleshooting.
 ---
 
 ## Quick Start
@@ -24,13 +24,17 @@ docker exec -it -u admin isaac_ros_dev_container bash
 docker stop isaac_ros_dev_container && docker rm isaac_ros_dev_container
 ```
 
-## DO NOT use `isaac-ros activate`
+---
+
+## Do not use `isaac-ros activate`
 
 :::danger
-`isaac-ros activate` (`/usr/bin/isaac-ros`) will **delete a stopped container and recreate from the base NVIDIA image**, losing all customizations (foxglove-bridge, ffmpeg, FastDDS fix, entrypoint scripts).
+`isaac-ros activate` deletes a stopped container and recreates from the base NVIDIA image, losing all customizations.
 :::
 
-Safe for attaching to an **already running** container (just does `docker exec bash`), but never use it to start one.
+Safe for attaching to an already running container (`docker exec bash`), but never use it to start one.
+
+---
 
 ## Image
 
@@ -43,20 +47,26 @@ Safe for attaching to an **already running** container (just does `docker exec b
 
 Switching to a reproducible Dockerfile. See [Dockerfile Plan](/robot-docs/isaac-ros/dockerfile-plan/).
 
-New base: **full NVIDIA image** (noble + ros2_jazzy layers) with ROS 2 Jazzy (50+ packages), TensorRT, PyTorch, nav2, rviz2, foxglove-bridge, slam_toolbox, OpenCV, and CUDA dev tools.
+New base: full NVIDIA image (noble + ros2_jazzy layers) with ROS 2 Jazzy, TensorRT, PyTorch, nav2, rviz2, foxglove-bridge, slam_toolbox, OpenCV, and CUDA dev tools.
 
-**Custom additions on top (Dockerfile):**
-- `ros-jazzy-isaac-ros-apriltag` -- GPU AprilTag
-- `ros-jazzy-isaac-ros-visual-slam` -- cuVSLAM
-- `ros-jazzy-isaac-ros-nvblox` -- GPU 3D reconstruction
-- `ros-jazzy-foxglove-compressed-video-transport` -- H.264 NVENC for Foxglove (community package, NOT in base)
-- `ros-jazzy-ffmpeg-encoder-decoder` + `ffmpeg` -- NVENC encoding
-- FastDDS no-SHM XML at `/etc/fastdds_no_shm.xml`
-- Entrypoint scripts for foxglove-bridge + H.264 republisher auto-start
+Custom additions on top (Dockerfile):
 
-**NOT needed in container:**
+| Package | Purpose |
+|---|---|
+| `ros-jazzy-isaac-ros-apriltag` | GPU AprilTag |
+| `ros-jazzy-isaac-ros-visual-slam` | cuVSLAM |
+| `ros-jazzy-isaac-ros-nvblox` | GPU 3D reconstruction |
+| `ros-jazzy-foxglove-compressed-video-transport` | H.264 NVENC for Foxglove |
+| `ros-jazzy-ffmpeg-encoder-decoder` + `ffmpeg` | NVENC encoding |
+| FastDDS no-SHM XML | `/etc/fastdds_no_shm.xml` |
+| Entrypoint scripts | foxglove-bridge + H.264 republisher auto-start |
+
+Not needed in container:
+
 - Unitree SDK/packages -- runs on G1's Jetson Orin, not workstation
 - System ROS 2 on host -- conflicts with Isaac Sim's Python 3.11
+
+---
 
 ## Installed Packages (on top of base)
 
@@ -68,16 +78,15 @@ ros-jazzy-ffmpeg-encoder-decoder               # ffmpeg with NVENC
 ffmpeg                                         # CLI tool
 ```
 
+---
+
 ## Custom Configs Baked Into Image
 
 ### 1. FastDDS UDP-only transport XML
 
-**Path:** `/tmp/fastdds_no_shm.xml`
-(Future Dockerfile should move to `/etc/fastdds_no_shm.xml`)
+Path: `/tmp/fastdds_no_shm.xml` (Dockerfile moves to `/etc/fastdds_no_shm.xml`)
 
 Fixes SHM transport breakage between Isaac Sim (host) and container. Without it, topics are discoverable but data doesn't flow.
-
-Full XML content:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8" ?>
@@ -107,9 +116,9 @@ Set in `/etc/profile.d/fastdds-fix.sh` -- login shells pick it up automatically.
 
 ### 3. Foxglove-bridge auto-start
 
-**Path:** `/usr/local/bin/scripts/entrypoint_additions/50-foxglove-bridge.sh`
+Path: `/usr/local/bin/scripts/entrypoint_additions/50-foxglove-bridge.sh`
 
-Auto-starts foxglove-bridge on port 8765 at container launch. Also sets the FastDDS env var.
+Auto-starts foxglove-bridge on port 8765 at container launch.
 
 ```bash
 #!/bin/bash
@@ -118,13 +127,17 @@ source /opt/ros/jazzy/setup.bash
 ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=8765 &
 ```
 
+---
+
 ## Running Services
 
 ### Foxglove Bridge
 
-- **Port:** 8765 (WebSocket)
-- **Connect from Mac:** `ws://100.101.214.44:8765` (Tailscale) or `ws://workstation:8765`
-- **Auto-starts** via entrypoint addition when container uses workspace-entrypoint
+| | |
+|---|---|
+| **Port** | 8765 (WebSocket) |
+| **Connect from Mac** | `ws://100.101.214.44:8765` (Tailscale) or `ws://workstation:8765` |
+| **Auto-starts** | Via entrypoint addition when container uses workspace-entrypoint |
 
 ### H.264 NVENC Republisher
 
@@ -149,6 +162,8 @@ docker exec -d isaac_ros_dev_container bash -c \
 - H.265 does NOT work with Foxglove browser (can't decode keyframes)
 - NVENC requires `gop_size` > 1
 
+---
+
 ## Host Wrappers
 
 ### `~/bin/ros2`
@@ -161,6 +176,8 @@ docker exec isaac_ros_dev_container bash -c \
    source /opt/ros/jazzy/setup.bash && \
    ros2 $*"
 ```
+
+---
 
 ## Troubleshooting
 

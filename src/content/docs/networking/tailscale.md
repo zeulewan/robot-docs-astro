@@ -1,6 +1,6 @@
 ---
 title: "Tailscale VPN"
-description: "Tailscale configuration, ACL policy, peer relay setup, and connection troubleshooting."
+description: "Tailscale ACL policy, peer relay, and connection troubleshooting."
 ---
 
 ## ACL Policy
@@ -29,7 +29,7 @@ description: "Tailscale configuration, ACL policy, peer relay setup, and connect
 }
 ```
 
-**Important**: The `grants` section must be set via the Tailscale API directly -- the MCP ACL tool (`manage_acl`) silently drops the `grants` field. Use:
+The `grants` section must be set via the Tailscale API directly -- the MCP ACL tool (`manage_acl`) silently drops it:
 
 ```bash
 curl -X POST -H "Authorization: Bearer $TAILSCALE_API_KEY" \
@@ -38,35 +38,39 @@ curl -X POST -H "Authorization: Bearer $TAILSCALE_API_KEY" \
   -d '{ ... full ACL with grants ... }'
 ```
 
+---
+
 ## Peer Relay
 
-- **Device**: tsrelay (Toronto, 100.95.40.19)
-- **Relay port**: 40000 (`tailscale set --relay-server-port=40000`)
-- **Port forward**: Toronto UniFi forwards UDP 40000 -> tsrelay LAN IP (192.168.177.228)
-- **Static endpoints**: CLEARED -- do NOT set `--relay-server-static-endpoints` since Bell PPPoE IP is dynamic. STUN + UPnP discovers the public IP automatically.
-- **Systemd override**: `/etc/systemd/system/tailscaled.service.d/relay.conf` sets `--relay-server-port=40000` on startup. Do NOT add `--relay-server-static-endpoints` here -- it will go stale when Bell rotates the PPPoE IP.
-- **Grant**: Devices tagged `tag:clients` can use devices tagged `tag:relay` as peer relays (requires BOTH the `app` grant for `tailscale.com/cap/relay` AND an `ip` grant)
-- **Purpose**: When direct connections fail (school NAT, mobile hotspot symmetric NAT), devices route through tsrelay instead of Tailscale's DERP servers. Peer relay has no bandwidth throttling unlike DERP.
+When direct connections fail (school NAT, mobile hotspot symmetric NAT), devices route through tsrelay instead of Tailscale's DERP servers. No bandwidth throttling unlike DERP.
 
-### Connection priority
+| | |
+|---|---|
+| **Device** | tsrelay (Toronto, 100.95.40.19) |
+| **Relay port** | 40000 (`tailscale set --relay-server-port=40000`) |
+| **Port forward** | Toronto UniFi: UDP 40000 -> tsrelay (192.168.177.228) |
+| **Systemd override** | `/etc/systemd/system/tailscaled.service.d/relay.conf` |
+| **Grant** | `tag:clients` -> `tag:relay` (requires both `app` and `ip` grants) |
 
-Tailscale decides automatically:
+Do not set `--relay-server-static-endpoints` -- Bell PPPoE IP is dynamic. STUN + UPnP discovers the public IP automatically.
 
-1. **Direct** (UDP hole-punch) - fastest
-2. **Peer relay** (tsrelay) - no throttling, ~15ms Toronto-Kingston
-3. **DERP** (Tailscale servers, Toronto) - throttled, ~14ms
+### Connection priority (automatic)
 
-### How peer relay grant works
+| Priority | Type | Latency |
+|---|---|---|
+| 1 | Direct (UDP hole-punch) | Fastest |
+| 2 | Peer relay (tsrelay) | ~15ms Toronto-Kingston, no throttling |
+| 3 | DERP (Tailscale servers) | ~14ms, throttled |
 
-- `src` = who can USE the relay (must be tag:clients)
-- `dst` = the relay device itself (must be tag:relay)
-- Only the device initiating through the relay needs the tag, not both sides
-- Removing tag:clients from a device blocks its relay access
+### Grant mechanics
 
-### Tagged device limitation
+- `src` = who can use the relay (`tag:clients`)
+- `dst` = the relay device (`tag:relay`)
+- Only the initiating device needs the tag, not both sides
+- Tags can't be removed without `tailscale up --force-reauth`
+- To test without relay, remove `grants` from ACL instead of changing device tags
 
-- Tags can't be removed without re-authenticating (`tailscale up --force-reauth`)
-- To test without relay, temporarily remove the `grants` section from ACL instead of changing device tags
+---
 
 ## Connection Results by Location
 
@@ -78,8 +82,12 @@ Tailscale decides automatically:
 | Mobile hotspot | Peer relay | ~50-120ms | Carrier CGNAT has symmetric NAT (EDM), no UPnP. Direct to tsrelay may work; workstation goes via peer relay |
 | Anywhere (no relay) | DERP Toronto | ~14ms | Bandwidth throttled |
 
+---
+
 ## Tailscale Ports
 
-- **41641/UDP**: Default Tailscale WireGuard port (on each device)
-- **40000/UDP**: Peer relay port (tsrelay only)
-- **3478/UDP**: STUN port (used by Tailscale's DERP/STUN servers for NAT discovery)
+| Port | Protocol | Purpose |
+|---|---|---|
+| 41641 | UDP | Default WireGuard (each device) |
+| 40000 | UDP | Peer relay (tsrelay only) |
+| 3478 | UDP | STUN (NAT discovery) |

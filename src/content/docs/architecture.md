@@ -1,6 +1,6 @@
 ---
 title: System Architecture
-description: Full system architecture covering simulation and real G1 robot modes, data flow, and network topology.
+description: Simulation and real G1 robot modes, data flow, and network topology.
 ---
 
 Two modes: **simulation** (Isaac Sim on workstation) and **real robot** (Unitree G1 with Jetson Orin). Both share the same Isaac ROS container on the workstation for GPU perception and visualization.
@@ -9,31 +9,25 @@ Two modes: **simulation** (Isaac Sim on workstation) and **real robot** (Unitree
 
 ## Simulation Mode
 
-```
-WORKSTATION (RTX 3090)
-+----------------------------------+     +-----------------------------------+
-|  Isaac Sim 5.1 (pip)             |     |  Isaac ROS Container              |
-|  conda env: isaaclab             |     |  (noble-ros2_jazzy base)          |
-|                                  |     |                                   |
-|  Simulated G1 robot              |     |  GPU Perception:                  |
-|  - cameras, IMU, joints          |     |  - cuVSLAM (visual SLAM)          |
-|  - physics + rendering           |     |  - AprilTag detection             |
-|                                  |     |  - nvblox (3D reconstruction)     |
-|  Bundled ROS 2 bridge            |     |                                   |
-|  - publishes sensor topics       |     |  Visualization:                   |
-|  - receives commands             |     |  - foxglove-bridge :8765          |
-|                                  |     |  - H.264 NVENC republisher        |
-|         UDP DDS -----------------+-----+  - ros2 CLI, rviz2, nav2          |
-|         UDP DDS <----------------+-----+                                   |
-|                                  |     |  FastDDS: UDP-only (no SHM)       |
-+-------------+--------------------+     +--------------+--------------------+
-              |                                         |
-        +-----+-----+                         port 8765 | WebSocket
-        | RTX 3090  |                                   |
-        +-----------+                         +---------+---------+
-                                              | Foxglove Studio   |
-                                              | (browser / Mac)   |
-                                              +-------------------+
+```mermaid
+flowchart LR
+    subgraph WS["WORKSTATION (RTX 3090)"]
+        subgraph SIM["Isaac Sim 5.1 (pip)<br/>conda env: isaaclab"]
+            G1S["Simulated G1 robot<br/>cameras, IMU, joints<br/>physics + rendering"]
+            BRIDGE["Bundled ROS 2 bridge<br/>publishes sensor topics<br/>receives commands"]
+        end
+        subgraph ROS["Isaac ROS Container<br/>noble-ros2_jazzy base"]
+            PERC["GPU Perception<br/>cuVSLAM, AprilTag<br/>nvblox"]
+            VIZ["Visualization<br/>foxglove-bridge :8765<br/>H.264 NVENC republisher<br/>ros2 CLI, rviz2, nav2"]
+            FDDS["FastDDS: UDP-only<br/>(no SHM)"]
+        end
+        GPU["RTX 3090"]
+    end
+    FOX["Foxglove Studio<br/>(browser / Mac)"]
+
+    BRIDGE -- "UDP DDS" --> FDDS
+    FDDS -- "UDP DDS" --> BRIDGE
+    VIZ -- "WebSocket :8765" --> FOX
 ```
 
 ### Data Flow (Sim)
@@ -57,31 +51,25 @@ WORKSTATION (RTX 3090)
 
 ## Real Robot Mode
 
-```
-UNITREE G1 (Jetson Orin)                WORKSTATION (RTX 3090)
-+-----------------------------+          +-----------------------------------+
-|  Ubuntu 20.04 (ARM64)       |          |  Isaac ROS Container              |
-|                             |          |  (noble-ros2_jazzy base)          |
-|  unitree_sdk2 (motor ctrl)  |          |                                   |
-|  unitree_ros2 (ROS bridge)  |          |  GPU Perception (offloaded):      |
-|  CycloneDDS                 |          |  - cuVSLAM (visual SLAM)          |
-|                             |          |  - AprilTag detection              |
-|  Onboard sensors:           |          |  - nvblox (3D reconstruction)     |
-|  - stereo cameras           |          |                                   |
-|  - IMU                      |          |  Visualization:                   |
-|  - joint encoders           |          |  - foxglove-bridge :8765          |
-|  - depth cameras            |          |  - H.264 NVENC republisher        |
-|                             |          |  - ros2 CLI, rviz2, nav2          |
-|  Publishes ROS 2 topics ----+-- DDS ---+                                   |
-|  Receives commands <---------+-- DDS ---+  CycloneDDS (matching G1)         |
-+-----------------------------+          +--------------+--------------------+
-       |                                                |
-  Ethernet                                     port 8765| WebSocket
-  192.168.123.x                                         |
-                                              +--------+---------+
-                                              | Foxglove Studio  |
-                                              | (browser / Mac)  |
-                                              +------------------+
+```mermaid
+flowchart LR
+    subgraph G1["UNITREE G1 (Jetson Orin)"]
+        G1OS["Ubuntu 20.04 (ARM64)"]
+        G1SW["unitree_sdk2 (motor ctrl)<br/>unitree_ros2 (ROS bridge)<br/>CycloneDDS"]
+        SENS["Onboard sensors<br/>stereo cameras, IMU<br/>joint encoders, depth cameras"]
+    end
+    subgraph WS["WORKSTATION (RTX 3090)"]
+        subgraph ROSC["Isaac ROS Container<br/>noble-ros2_jazzy base"]
+            PERC2["GPU Perception (offloaded)<br/>cuVSLAM, AprilTag, nvblox"]
+            VIZ2["Visualization<br/>foxglove-bridge :8765<br/>H.264 NVENC republisher<br/>ros2 CLI, rviz2, nav2"]
+            CDDS["CycloneDDS<br/>(matching G1)"]
+        end
+    end
+    FOX2["Foxglove Studio<br/>(browser / Mac)"]
+
+    G1SW -- "DDS over Ethernet<br/>192.168.123.x" --> CDDS
+    CDDS -- "DDS over Ethernet<br/>192.168.123.x" --> G1SW
+    VIZ2 -- "WebSocket :8765" --> FOX2
 ```
 
 ### Data Flow (Real)
@@ -126,11 +114,14 @@ export CYCLONEDDS_URI='<CycloneDDS><Domain><General><Interfaces>
 
 ### Orin vs Workstation GPU Perception
 
-The G1's Orin CAN run Isaac ROS perception locally, but the RTX 3090 is far more powerful.
+The G1's Orin can run Isaac ROS perception locally, but the RTX 3090 is far more powerful.
 
-- **Offload heavy perception to workstation** -- SLAM, nvblox, large model inference
-- **Run latency-critical perception on Orin** -- obstacle detection, emergency stop (final deployment)
-- During development, run everything on workstation
+| Workload | Location | Examples |
+|---|---|---|
+| Heavy perception | Workstation (RTX 3090) | SLAM, nvblox, large model inference |
+| Latency-critical | Orin (final deployment) | Obstacle detection, emergency stop |
+
+During development, run everything on workstation.
 
 ---
 
@@ -142,7 +133,7 @@ The G1's Orin CAN run Isaac ROS perception locally, but the RTX 3090 is far more
 nvcr.io/nvidia/isaac/ros:noble-ros2_jazzy_<hash>-amd64
 ```
 
-Includes ROS 2 Jazzy (50+ packages), TensorRT, PyTorch, nav2, rviz2, foxglove-bridge, slam_toolbox, OpenCV, CUDA dev tools, VPI, CV-CUDA, Triton.
+Includes ROS 2 Jazzy (50+ packages), TensorRT, PyTorch, nav2, rviz2, foxglove-bridge, slam_toolbox, OpenCV, CUDA dev tools, VPI, CV-CUDA, and Triton.
 
 ### Custom Dockerfile Additions
 
