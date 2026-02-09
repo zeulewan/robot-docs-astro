@@ -7,12 +7,12 @@ import starlightClientMermaid from '@pasqal-io/starlight-client-mermaid';
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://zeulewan.github.io',
-	base: '/robot-docs/',
+	base: '/robot-docs-astro/',
 	integrations: [
 		starlight({
 			title: 'Robot Docs',
 			customCss: ['./src/styles/custom.css'],
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/zeulewan/robot-docs' }],
+			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/zeulewan/robot-docs-astro' }],
 			plugins: [
 				starlightClientMermaid(),
 				starlightBlog({
